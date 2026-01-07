@@ -105,7 +105,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
   -H "X-API-Key: your-api-key-here"
 ```
 
-## Supported Tools (16 Total)
+## Supported Tools (21 Total)
 
 ### Core Security Tools
 - **wafw00f** - WAF Detection
@@ -119,7 +119,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 - **httpx** - HTTP Probing & Host Verification (extensive parameter support)
 - **gvm** - OpenVAS Vulnerability Scanner
 
-### Advanced Security Tools (6 tools)
+### Advanced Security Tools (7 tools)
 
 - **domainfinder** - Domain Reconnaissance & Discovery
   - Parameters: ssl_certificates, builtwith, reverse_whois, minimum_weight
@@ -133,6 +133,19 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
   - Parameters: enumerate_users, enumerate_plugins, check_config, aggressive
 - **sharepointscanner** - SharePoint Security Scanner
   - Parameters: enumerate_users, enumerate_plugins, check_config, aggressive
+- **cvesearch** - CVE Search & Vulnerability Discovery
+  - Parameters: use_nuclei, use_nmap, severity
+
+### Offensive Security Tools (4 tools)
+
+- **sqlmap** - SQL Injection Testing & Exploitation
+  - Parameters: url, data, cookie, level, risk, technique, dbms, threads, timeout
+- **subdomainfinder** - Subdomain Enumeration & Discovery
+  - Parameters: use_subfinder, use_assetfinder, use_shodan, threads, timeout, wordlist
+- **shodansearch** - Shodan Intelligence Gathering
+  - Parameters: query, facets, limit, country, city, api_key
+- **xssstrike** - XSS Detection & Exploitation
+  - Parameters: crawl_depth, payload_level, blind_xss, custom_payloads, timeout, user_agent
 
 ## Management Endpoints
 
@@ -185,11 +198,6 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 | `ALLOWED_ORIGIN` | No | `https://compani.com` | CORS allowed origin |
 | `FLASK_DEBUG` | No | `false` | Enable Flask debug mode |
 
-## Documentation
-
-- **[API-Documentation.md](API-Documentation.md)** - Complete API reference with all endpoints and parameters
-- **[API-WORKFLOW.md](API-WORKFLOW.md)** - Detailed workflow documentation for each endpoint
-- **[TESTING_REPORT.md](TESTING_REPORT.md)** - Comprehensive testing results and validation
 
 ## Quick Examples
 
