@@ -1,6 +1,6 @@
 # Security Scanner API
 
-Asynchronous Flask API for security scanning tools on Kali Linux with job management and comprehensive tool integration. Now featuring 16 specialized security scanners including advanced tools for domain reconnaissance, cloud security, credential auditing, and CMS vulnerability detection.
+Asynchronous Flask API for security scanning tools on Kali Linux with job management and comprehensive tool integration. Now featuring 27 specialized security scanners including advanced tools for domain reconnaissance, cloud security, credential auditing, CMS vulnerability detection, VirusTotal analysis, breach database search, advanced XSS scanning, and WordPress security assessment.
 
 ## Quick Start
 
@@ -43,6 +43,18 @@ API_KEY=your-generated-api-key-here
 # GVM/OpenVAS Credentials
 GVM_USERNAME=admin
 GVM_PASSWORD=your-gvm-password
+
+# Shodan API Key
+SHODAN_API_KEY=your-shodan-api-key-here
+
+# VirusTotal API Key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key-here
+
+# BreachVIP API Key
+BREACHVIP_API_KEY=your-breachvip-api-key-here
+
+# WPScan API Key
+WPSCAN_API_KEY=your-wpscan-api-key-here
 
 # CORS Configuration
 ALLOWED_ORIGIN=https://compani.com
@@ -105,7 +117,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
   -H "X-API-Key: your-api-key-here"
 ```
 
-## Supported Tools (21 Total)
+## Supported Tools (27 Total)
 
 ### Core Security Tools
 - **wafw00f** - WAF Detection
@@ -143,9 +155,23 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 - **subdomainfinder** - Subdomain Enumeration & Discovery
   - Parameters: use_subfinder, use_assetfinder, use_shodan, threads, timeout, wordlist
 - **shodansearch** - Shodan Intelligence Gathering
-  - Parameters: query, facets, limit, country, city, api_key
+  - Parameters: query, facets, limit, country, city
 - **xssstrike** - XSS Detection & Exploitation
   - Parameters: crawl_depth, payload_level, blind_xss, custom_payloads, timeout, user_agent
+
+### Intelligence & Analysis Tools (2 tools)
+
+- **virustotal** - VirusTotal Domain Analysis
+  - Parameters: None (uses target domain only)
+- **breachvip** - Breach Database Search
+  - Parameters: query, fields, categories, wildcard, case_sensitive
+
+### Advanced Scanning Tools (2 tools)
+
+- **dalfox** - Advanced XSS Scanner
+  - Parameters: crawl_depth, timeout, user_agent, cookie, headers, method, data, mining_dict, mining_dom, follow_redirects, silence
+- **wpscan** - WordPress Security Scanner
+  - Parameters: enumerate, detection_mode, user_agent, random_user_agent, max_threads, request_timeout, connect_timeout, disable_tls_checks, follow_redirects
 
 ## Management Endpoints
 
@@ -195,9 +221,18 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 | `API_KEY` | Yes (if auth enabled) | None | API key for authentication |
 | `GVM_USERNAME` | Yes (for GVM scans) | `admin` | OpenVAS/GVM username |
 | `GVM_PASSWORD` | Yes (for GVM scans) | `admin` | OpenVAS/GVM password |
+| `SHODAN_API_KEY` | Yes (for Shodan scans) | None | Shodan API key for intelligence gathering |
+| `VIRUSTOTAL_API_KEY` | Yes (for VirusTotal scans) | None | VirusTotal API key for domain analysis |
+| `BREACHVIP_API_KEY` | Yes (for BreachVIP scans) | None | BreachVIP API key for breach database search |
+| `WPSCAN_API_KEY` | Yes (for WPScan scans) | None | WPScan API key for WordPress vulnerability database |
 | `ALLOWED_ORIGIN` | No | `https://compani.com` | CORS allowed origin |
 | `FLASK_DEBUG` | No | `false` | Enable Flask debug mode |
 
+## Documentation
+
+- **[API-Documentation.md](API-Documentation.md)** - Complete API reference with all endpoints and parameters
+- **[API-WORKFLOW.md](API-WORKFLOW.md)** - Detailed workflow documentation for each endpoint
+- **[TESTING_REPORT.md](TESTING_REPORT.md)** - Comprehensive testing results and validation
 
 ## Quick Examples
 
@@ -243,6 +278,66 @@ curl -X POST http://localhost:5000/scan \
     "params": {
       "enumerate_plugins": true,
       "check_config": true
+    }
+  }'
+```
+
+### VirusTotal Domain Analysis
+```bash
+curl -X POST http://localhost:5000/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "tool": "virustotal",
+    "target": "example.com"
+  }'
+```
+
+### Breach Database Search
+```bash
+curl -X POST http://localhost:5000/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "tool": "breachvip",
+    "target": "test@example.com",
+    "params": {
+      "query": "test@*.com",
+      "fields": ["email", "username"],
+      "wildcard": true
+    }
+  }'
+```
+
+### Advanced XSS Scanning
+```bash
+curl -X POST http://localhost:5000/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "tool": "dalfox",
+    "target": "http://testphp.vulnweb.com",
+    "params": {
+      "crawl_depth": 3,
+      "timeout": 15,
+      "mining_dict": true,
+      "mining_dom": true
+    }
+  }'
+```
+
+### WordPress Security Assessment
+```bash
+curl -X POST http://localhost:5000/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "tool": "wpscan",
+    "target": "https://wordpress.example.com",
+    "params": {
+      "enumerate": "vp,vt,tt,cb,dbe,u,m",
+      "detection_mode": "aggressive",
+      "max_threads": 10
     }
   }'
 ```
