@@ -28,13 +28,13 @@ The Security Scanner API is an asynchronous Flask-based REST API that provides a
 - Enhanced security (SSRF protection, injection detection, timing-attack resistant auth)
 
 **Security Features:**
-- Timing-attack resistant authentication
-- Enhanced SSRF protection (blocks AWS/Azure/Alibaba metadata IPs)
-- Injection pattern detection (shell metacharacters, commands)
-- API key-based job ownership (not IP-based)
-- Comprehensive security headers
-- Rate limiting (100 req/hour per IP)
-- Audit logging for security events
+- ✅ Timing-attack resistant authentication
+- ✅ Enhanced SSRF protection (blocks AWS/Azure/Alibaba metadata IPs)
+- ✅ Injection pattern detection (shell metacharacters, commands)
+- ✅ API key-based job ownership (not IP-based)
+- ✅ Comprehensive security headers
+- ✅ Rate limiting (100 req/hour per IP)
+- ✅ Audit logging for security events
 
 ---
 
@@ -1636,6 +1636,27 @@ jobs_by_status{status="running"} 2
 jobs_by_status{status="failed"} 5
 ```
 
+### GET /db-stats
+Database statistics for debugging multi-worker deployments.
+
+**Description:**
+This endpoint provides information about the persistent JSON database used for storing jobs across nginx workers. Useful for debugging multi-worker synchronization issues.
+
+**Response:**
+```json
+{
+    "database": "jobs_db.json",
+    "stats": {
+        "total_jobs": 150,
+        "active_scans": 2,
+        "tracked_ips": 25,
+        "last_updated": "2024-01-01 17:30:00",
+        "db_version": "1.0"
+    },
+    "message": "Persistent storage for nginx multi-worker support"
+}
+```
+
 ---
 
 ## Error Handling
@@ -1695,31 +1716,5 @@ jobs_by_status{status="failed"} 5
     "status": "running"
 }
 ```
----
-
-## Best Practices
-
-### 1. Job Management
-- Store job IDs for later reference
-- Implement proper error handling for failed scans
-- Use the `/jobs` endpoint to track scan history
-
-### 2. Target Validation
-- Ensure you have permission to scan targets
-- Use proper domain names or IP addresses
-- Be aware of scope restrictions
-
-### 3. Resource Management
-- Don't start too many concurrent scans (max 5)
-- Cancel unnecessary scans to free resources
-- Monitor system health via `/health` endpoint
-
-### 4. Security Considerations
-- Run the API in a controlled environment
-- Implement proper network security
-- Log and monitor API usage
-- Validate all inputs before scanning
-
----
 
 This documentation provides comprehensive coverage of all API endpoints, tools, parameters, and usage examples. Users can reference specific sections based on their needs and experience level.
