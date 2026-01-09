@@ -2,6 +2,8 @@
 
 Asynchronous Flask API for security scanning tools on Kali Linux with job management and comprehensive tool integration. Now featuring 27 specialized security scanners including advanced tools for domain reconnaissance, cloud security, credential auditing, CMS vulnerability detection, VirusTotal analysis, breach database search, advanced XSS scanning, and WordPress security assessment.
 
+**NEW:** Includes persistent job storage (`job_db.py`) for nginx multi-worker deployment support.
+
 ## Quick Start
 
 ```bash
@@ -82,6 +84,20 @@ export $(cat .env | xargs)
 # Start the server
 python f.py
 ```
+
+### 5. Production Deployment (Nginx Multi-Worker)
+
+For production with nginx and multiple workers, the API uses `job_db.py` for persistent job storage:
+
+```bash
+# Using Gunicorn with multiple workers
+gunicorn -w 4 -b 0.0.0.0:5000 f:app
+
+# Using uWSGI
+uwsgi --http 0.0.0.0:5000 --module f:app --processes 4
+```
+
+**Why this matters:** Each nginx worker runs in its own process with separate memory. The `job_db.py` module stores all job data in a shared JSON file (`jobs_db.json`) with file locking, ensuring all workers can access the same job state.
 
 ## Common API Contract
 
@@ -178,6 +194,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 - `GET /jobs` - List all jobs (params: limit, status)
 - `GET /health` - Health check
 - `GET /metrics` - Prometheus metrics
+- `GET /db-stats` - Database statistics (for debugging multi-worker issues)
 - `POST /cancel/{job_id}` - Cancel running scan
 
 ## Features
@@ -192,6 +209,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 - **Job Ownership** - API key-based job tracking and access control
 - **Rate Limiting** - 100 requests per hour per IP
 - **Audit Logging** - All security events logged to audit.log
+- **Persistent Storage** - JSON-based job database for nginx multi-worker support
 
 ## Security Features
 
@@ -231,8 +249,22 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
 ## Documentation
 
 - **[API-Documentation.md](API-Documentation.md)** - Complete API reference with all endpoints and parameters
-- **[API-WORKFLOW.md](API-WORKFLOW.md)** - Detailed workflow documentation for each endpoint
-- **[TESTING_REPORT.md](TESTING_REPORT.md)** - Comprehensive testing results and validation
+- **[tools&para.md](tools&para.md)** - Quick reference for all tools and their parameters
+
+## Project Structure
+
+```
+api-test/
+├── f.py                 # Main Flask API application
+├── job_db.py            # Persistent job database (multi-worker support)
+├── jobs_db.json         # Auto-created job storage file
+├── .env                 # Environment variables
+├── requirements.txt     # Python dependencies
+├── index.html           # Frontend UI
+├── README.md            # This file
+├── API-Documentation.md # Complete API documentation
+└── tools&para.md        # Tools & parameters reference
+```
 
 ## Quick Examples
 
