@@ -1564,6 +1564,104 @@ Comprehensive WordPress security assessment.
 
 ---
 
+### 26. HTTP Header Security Audit (headeraudit)
+Analyzes HTTP security headers and provides security grade.
+
+**Parameters:**
+- `follow_redirects`: Follow HTTP redirects (default: true)
+- `user_agent`: Custom User-Agent string
+- `timeout`: Request timeout in seconds (default: 30)
+- `check_deprecated`: Check for deprecated headers (default: true)
+
+**Usage:**
+```json
+{
+    "tool": "headeraudit",
+    "target": "https://example.com"
+}
+```
+
+**Output:**
+```json
+{
+    "security_grade": "B",
+    "security_score": 65,
+    "headers_present": [{"header": "X-Frame-Options", "value": "DENY"}],
+    "headers_missing": ["Content-Security-Policy", "Strict-Transport-Security"],
+    "findings": [{"header": "CSP", "severity": "high", "recommendation": "..."}],
+    "deprecated_headers": [],
+    "info_disclosure": [{"header": "Server", "value": "nginx/1.18"}]
+}
+```
+
+---
+
+### 27. Comprehensive Web Scan (webscan) - Composite
+Orchestrates multiple tools for web application security assessment.
+
+**Endpoint:** `POST /webscan`
+
+**Parameters:**
+- `scan_level`: "light" or "deep" (default: "light")
+- `enable_cve`: Enable CVE detection in nmap/nuclei (default: true)
+- `enable_xss`: Enable XSS testing (default: false)
+- `enable_sqli`: Enable SQL injection testing (default: false)
+- `cms_scan`: "auto", "wordpress", "drupal", "joomla", "none" (default: "auto")
+- `nuclei_severity`: Severity filter (default: auto based on scan_level)
+
+**Tools Orchestrated:**
+- Phase 1: httpx, whatweb, wafw00f, headeraudit, nmap (parallel)
+- Phase 2: sslscan
+- Phase 3: nuclei, dirb, nikto (deep only)
+- Phase 4: CMS-specific scanner
+- Phase 5: dalfox, sqlmap (if enabled, deep only)
+
+**Usage:**
+```json
+{
+    "target": "https://example.com",
+    "params": {
+        "scan_level": "deep",
+        "enable_cve": true,
+        "cms_scan": "auto"
+    }
+}
+```
+
+---
+
+### 28. Network Infrastructure Scan (networkscan) - Composite
+Orchestrates multiple tools for network security assessment.
+
+**Endpoint:** `POST /networkscan`
+
+**Parameters:**
+- `scan_level`: "light" or "deep" (default: "light")
+- `enable_cve`: Enable CVE detection (default: true)
+- `ports`: Port range (default: auto based on scan_level)
+- `enable_gvm`: Enable OpenVAS (default: false)
+- `nmap_type`: "1" (lite) or "2" (deep)
+
+**Tools Orchestrated:**
+- Phase 1: masscan, shodansearch (parallel)
+- Phase 2: nmap with CVE scripts
+- Phase 3: sslscan
+- Phase 4: nuclei CVE (deep only), gvm (if enabled)
+
+**Usage:**
+```json
+{
+    "target": "192.168.1.1",
+    "params": {
+        "scan_level": "deep",
+        "enable_cve": true,
+        "ports": "1-10000"
+    }
+}
+```
+
+---
+
 ## Management Endpoints
 
 ### GET /jobs
@@ -1716,5 +1814,169 @@ This endpoint provides information about the persistent JSON database used for s
     "status": "running"
 }
 ```
+
+---
+
+## Examples
+
+### Complete Workflow Example
+
+```bash
+# 1. Start a comprehensive scan
+RESPONSE=$(curl -s -X POST http://127.0.0.1:5000/scan \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "httpx",
+    "target": "example.com",
+    "params": {"follow_redirects": true}
+  }')
+
+# Extract job ID
+JOB_ID=$(echo $RESPONSE | jq -r '.job_id')
+echo "Started scan with job ID: $JOB_ID"
+
+# 2. Monitor progress
+while true; do
+    STATUS=$(curl -s http://127.0.0.1:5000/status/$JOB_ID | jq -r '.status')
+    echo "Current status: $STATUS"
+    
+    if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+        break
+    fi
+    
+    sleep 5
+done
+
+# 3. Get results
+if [ "$STATUS" = "completed" ]; then
+    curl -s http://127.0.0.1:5000/results/$JOB_ID | jq '.'
+else
+    echo "Scan failed"
+fi
+```
+
+### Batch Scanning Multiple Targets
+
+```bash
+#!/bin/bash
+TARGETS=("example.com" "google.com" "github.com")
+JOB_IDS=()
+
+# Start all scans
+for target in "${TARGETS[@]}"; do
+    response=$(curl -s -X POST http://127.0.0.1:5000/scan \
+      -H "Content-Type: application/json" \
+      -d "{\"tool\": \"httpx\", \"target\": \"$target\"}")
+    
+    job_id=$(echo $response | jq -r '.job_id')
+    JOB_IDS+=($job_id)
+    echo "Started scan for $target: $job_id"
+done
+
+# Wait for all to complete
+for job_id in "${JOB_IDS[@]}"; do
+    while true; do
+        status=$(curl -s http://127.0.0.1:5000/status/$job_id | jq -r '.status')
+        if [ "$status" = "completed" ] || [ "$status" = "failed" ]; then
+            break
+        fi
+        sleep 2
+    done
+    echo "Job $job_id completed with status: $status"
+done
+```
+
+### Python Client Example
+
+```python
+import requests
+import time
+import json
+
+class SecurityScannerClient:
+    def __init__(self, base_url="http://127.0.0.1:5000"):
+        self.base_url = base_url
+    
+    def start_scan(self, tool, target, params=None):
+        """Start a new scan"""
+        payload = {
+            "tool": tool,
+            "target": target,
+            "params": params or {}
+        }
+        
+        response = requests.post(f"{self.base_url}/scan", json=payload)
+        return response.json()
+    
+    def get_status(self, job_id):
+        """Get scan status"""
+        response = requests.get(f"{self.base_url}/status/{job_id}")
+        return response.json()
+    
+    def get_results(self, job_id):
+        """Get scan results"""
+        response = requests.get(f"{self.base_url}/results/{job_id}")
+        return response.json()
+    
+    def wait_for_completion(self, job_id, timeout=300):
+        """Wait for scan to complete"""
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            status_data = self.get_status(job_id)
+            status = status_data.get('status')
+            
+            if status in ['completed', 'failed', 'cancelled']:
+                return status_data
+            
+            time.sleep(5)
+        
+        raise TimeoutError(f"Scan {job_id} did not complete within {timeout} seconds")
+
+# Usage example
+client = SecurityScannerClient()
+
+# Start a nuclei scan
+scan_response = client.start_scan("nuclei", "example.com")
+job_id = scan_response['job_id']
+
+print(f"Started scan: {job_id}")
+
+# Wait for completion
+final_status = client.wait_for_completion(job_id)
+print(f"Scan completed with status: {final_status['status']}")
+
+# Get results if successful
+if final_status['status'] == 'completed':
+    results = client.get_results(job_id)
+    print(json.dumps(results, indent=2))
+```
+
+---
+
+## Best Practices
+
+### 1. Job Management
+- Store job IDs for later reference
+- Implement proper error handling for failed scans
+- Use the `/jobs` endpoint to track scan history
+
+### 2. Target Validation
+- Ensure you have permission to scan targets
+- Use proper domain names or IP addresses
+- Be aware of scope restrictions
+
+### 3. Resource Management
+- Don't start too many concurrent scans (max 5)
+- Cancel unnecessary scans to free resources
+- Monitor system health via `/health` endpoint
+
+### 4. Security Considerations
+- Run the API in a controlled environment
+- Implement proper network security
+- Log and monitor API usage
+- Validate all inputs before scanning
+
+---
 
 This documentation provides comprehensive coverage of all API endpoints, tools, parameters, and usage examples. Users can reference specific sections based on their needs and experience level.
