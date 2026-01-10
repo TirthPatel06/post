@@ -1,8 +1,12 @@
 # Security Scanner API
 
-Asynchronous Flask API for security scanning tools on Kali Linux with job management and comprehensive tool integration. Now featuring 27 specialized security scanners including advanced tools for domain reconnaissance, cloud security, credential auditing, CMS vulnerability detection, VirusTotal analysis, breach database search, advanced XSS scanning, and WordPress security assessment.
+Asynchronous Flask API for security scanning tools on Kali Linux with job management and comprehensive tool integration. Now featuring **28 specialized security scanners** plus **3 composite scanners** for comprehensive security assessment.
 
-**NEW:** Includes persistent job storage (`job_db.py`) for nginx multi-worker deployment support.
+**NEW Features:**
+- **Composite Scanners:** `webscan`, `networkscan`, `cloudscan` - orchestrate multiple tools automatically
+- **HTTP Header Audit:** Security header analysis with A+ to F grading
+- **CVE Detection:** Integrated into nmap and nuclei via `enable_cve` parameter
+- **Persistent Job Storage:** `job_db.py` for nginx multi-worker deployment
 
 ## Quick Start
 
@@ -133,7 +137,7 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
   -H "X-API-Key: your-api-key-here"
 ```
 
-## Supported Tools (27 Total)
+## Supported Tools (28 Individual + 3 Composite)
 
 ### Core Security Tools
 - **wafw00f** - WAF Detection
@@ -188,6 +192,20 @@ curl -X POST http://localhost:5000/cancel/{job_id} \
   - Parameters: crawl_depth, timeout, user_agent, cookie, headers, method, data, mining_dict, mining_dom, follow_redirects, silence
 - **wpscan** - WordPress Security Scanner
   - Parameters: enumerate, detection_mode, user_agent, random_user_agent, max_threads, request_timeout, connect_timeout, disable_tls_checks, follow_redirects
+- **headeraudit** - HTTP Security Header Analysis
+  - Parameters: follow_redirects, user_agent, timeout, check_deprecated
+
+### Composite Scanners (3 scanners)
+
+- **webscan** - Comprehensive Web Application Security Scanner
+  - Parameters: scan_level, enable_cve, enable_xss, enable_sqli, cms_scan, nuclei_severity
+  - Orchestrates: httpx, whatweb, wafw00f, headeraudit, nmap, sslscan, nuclei, CMS scanners
+- **networkscan** - Network Infrastructure Security Scanner
+  - Parameters: scan_level, enable_cve, ports, enable_gvm, nmap_type
+  - Orchestrates: masscan, nmap, sslscan, nuclei (CVE)
+- **cloudscan** - Cloud Environment Security Scanner
+  - Parameters: scan_level, check_buckets, check_metadata
+  - Orchestrates: cloudscanner, nuclei
 
 ## Management Endpoints
 
@@ -370,6 +388,47 @@ curl -X POST http://localhost:5000/scan \
       "enumerate": "vp,vt,tt,cb,dbe,u,m",
       "detection_mode": "aggressive",
       "max_threads": 10
+    }
+  }'
+```
+
+### HTTP Header Security Audit
+```bash
+curl -X POST http://localhost:5000/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "tool": "headeraudit",
+    "target": "https://example.com"
+  }'
+```
+
+### Comprehensive Web Scan (Composite)
+```bash
+curl -X POST http://localhost:5000/webscan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "target": "https://example.com",
+    "params": {
+      "scan_level": "deep",
+      "enable_cve": true,
+      "cms_scan": "auto"
+    }
+  }'
+```
+
+### Network Infrastructure Scan (Composite)
+```bash
+curl -X POST http://localhost:5000/networkscan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{
+    "target": "192.168.1.1",
+    "params": {
+      "scan_level": "deep",
+      "enable_cve": true,
+      "ports": "1-10000"
     }
   }'
 ```
